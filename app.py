@@ -8,7 +8,10 @@ from sqlalchemy.exc import IntegrityError
 
 app = Flask(__name__)
 
+# Having the Debug Toolbar show redirects explicitly is often useful;
+# however, if you want to turn it off, you can uncomment this line:
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
+
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql:///playlist-app'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = True
@@ -17,11 +20,6 @@ connect_db(app)
 db.create_all()
 
 app.config['SECRET_KEY'] = "I'LL NEVER TELL!!"
-
-# Having the Debug Toolbar show redirects explicitly is often useful;
-# however, if you want to turn it off, you can uncomment this line:
-#
-# app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 
 debug = DebugToolbarExtension(app)
 
@@ -62,16 +60,18 @@ def add_playlist():
     """
 
     form = PlaylistForm()
-
     if form.validate_on_submit():
         playlist = Playlist(name=form.name.data,
                             description=form.description.data)
-        db.session.add(playlist)
-        try:
-            db.session.commit()
-        except IntegrityError():
-            form.name.errors.append('Please enter a name for this playlist.')
+        if form.name.data.isspace():
+            form.name.errors.append('Please enter a name for this playlist')
             return render_template('new_playlist.html', form=form)
+        if form.description.data.isspace():
+            form.description.errors.append(
+                'Please enter an description for this song')
+            return render_template('new_playlist.html', form=form)
+        db.session.add(playlist)
+        db.session.commit()
         return redirect('/playlists')
     return render_template('new_playlist.html', form=form)
 
@@ -107,15 +107,15 @@ def add_song():
 
     if form.validate_on_submit():
         song = Song(title=form.title.data, artist=form.artist.data)
+
+        if form.title.data.isspace():
+            form.title.errors.append('Please enter a title for this song')
+            return render_template('new_song.html', form=form)
+        if form.artist.data.isspace():
+            form.artist.errors.append('Please enter an artist for this song')
+            return render_template('new_song.html', form=form)
         db.session.add(song)
-        try:
-            db.session.commit()
-        except IntegrityError():
-            if form.title.data == '':
-                form.name.errors.append('Please enter a title for this song')
-            elif form.artist.data == '':
-                form.name.errors.append('Please enter an artist for this song')
-            return render_template('new_song.html', song=song)
+        db.session.commit()
         return redirect('/songs')
     return render_template('new_song.html', form=form)
 
@@ -125,8 +125,6 @@ def add_song_to_playlist(playlist_id):
     """Add a playlist and redirect to list."""
 
     # BONUS - ADD THE NECESSARY CODE HERE FOR THIS ROUTE TO WORK
-
-    # THE SOLUTION TO THIS IS IN A HINT IN THE ASSESSMENT INSTRUCTIONS
 
     playlist = Playlist.query.get_or_404(playlist_id)
     form = NewSongForPlaylistForm()

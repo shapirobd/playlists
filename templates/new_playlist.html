@@ -7,7 +7,7 @@
 	'hidden' %}
 	<p>{{field.label}} {{field(class_="form-control")}}</p>
 	{% for err in field.errors %}
-	<span>{{err}}</span>
+	<span class="text-danger">{{err}}</span>
 	{% endfor %} {% endfor %}
 	<button>Create</button>
 </form>
